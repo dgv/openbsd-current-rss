@@ -1,0 +1,11 @@
+language: go
+go:
+  - "1.10"
+
+deploy:
+  provider: gae
+  keyfile: "openbsd-current-rss-1744d0e1ec5a.json"
+  project: "openbsd-current-rss"
+  
+before_install:
+  - openssl aes-256-cbc -K $encrypted_0265935ce402_key -iv $encrypted_0265935ce402_iv -in openbsd-current-rss-1744d0e1ec5a.json.enc -out openbsd-current-rss-1744d0e1ec5a.json -d
