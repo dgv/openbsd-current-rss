@@ -5,6 +5,9 @@ services:
   
 language: go
 
+go:
+    - "1.10"
+
 deploy:
   provider: gae
   keyfile: "openbsd-current-rss-1744d0e1ec5a.json"

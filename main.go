@@ -7,16 +7,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	
-	"appengine"
-	"appengine/urlfetch"
 
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/urlfetch"
+
+	"golang.org/x/net/context"
 	"golang.org/x/net/html"
 )
 
 const OPENBSD_CURRENT_URL = "http://www.openbsd.org/faq/current.html"
 
-var entries    = make([]Entry, 0)
+var entries = make([]Entry, 0)
 
 type Atom struct {
 	XMLName xml.Name `xml:"feed"`
@@ -44,11 +46,11 @@ type Link struct {
 	Rel  string `xml:"rel,attr,omitempty"`
 }
 
-func serveError(c appengine.Context, w http.ResponseWriter, err error) {
+func serveError(c context.Context, w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	io.WriteString(w, "Internal Server Error")
-	c.Errorf("%v", err)
+	log.Errorf(c, "%v", err)
 }
 
 // parse entries by h3 tag
@@ -145,7 +147,7 @@ func parseEntries(body io.ReadCloser) (entries []Entry) {
 func handle(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
 	if len(entries) == 0 {
-		c.Infof("loading entries")
+		log.Infof(c, "loading entries")
 		client := urlfetch.Client(c)
 		res, err := client.Get(OPENBSD_CURRENT_URL)
 		if err != nil {
@@ -167,18 +169,22 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 func reload(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-		c.Infof("reloading entries")
-		client := urlfetch.Client(c)
-		res, err := client.Get(OPENBSD_CURRENT_URL)
-		if err != nil {
-			serveError(c, w, err)
-			return
-		}
-		defer res.Body.Close()
-		entries = parseEntries(res.Body)
+	log.Infof(c, "reloading entries")
+	client := urlfetch.Client(c)
+	res, err := client.Get(OPENBSD_CURRENT_URL)
+	if err != nil {
+		serveError(c, w, err)
+		return
+	}
+	defer res.Body.Close()
+	entries = parseEntries(res.Body)
 }
 
 func init() {
 	http.HandleFunc("/", handle)
 	http.HandleFunc("/reload", reload)
+}
+
+func main() {
+	appengine.Main()
 }
