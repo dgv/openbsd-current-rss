@@ -12,6 +12,7 @@ deploy:
   provider: gae
   keyfile: "openbsd-current-rss-1744d0e1ec5a.json"
   project: "openbsd-current-rss"
+  skip_cleanup: true
   verbosity: debug
   on: master
     
