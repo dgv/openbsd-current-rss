@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	
 	"appengine"
 	"appengine/urlfetch"
 
@@ -16,10 +16,7 @@ import (
 
 const OPENBSD_CURRENT_URL = "http://www.openbsd.org/faq/current.html"
 
-var (
-	lastUpdate string
-	entries    = make([]Entry, 0)
-)
+var entries    = make([]Entry, 0)
 
 type Atom struct {
 	XMLName xml.Name `xml:"feed"`
@@ -147,10 +144,8 @@ func parseEntries(body io.ReadCloser) (entries []Entry) {
 
 func handle(w http.ResponseWriter, r *http.Request) {
 	c := appengine.NewContext(r)
-	// one request per day
-	if time.Now().Format(time.RFC3339)[:10] != lastUpdate {
-		c.Infof("reloading entries")
-		lastUpdate = time.Now().Format(time.RFC3339)[:10]
+	if len(entries) == 0 {
+		c.Infof("loading entries")
 		client := urlfetch.Client(c)
 		res, err := client.Get(OPENBSD_CURRENT_URL)
 		if err != nil {
@@ -170,6 +165,20 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func reload(w http.ResponseWriter, r *http.Request) {
+	c := appengine.NewContext(r)
+		c.Infof("reloading entries")
+		client := urlfetch.Client(c)
+		res, err := client.Get(OPENBSD_CURRENT_URL)
+		if err != nil {
+			serveError(c, w, err)
+			return
+		}
+		defer res.Body.Close()
+		entries = parseEntries(res.Body)
+}
+
 func init() {
 	http.HandleFunc("/", handle)
+	http.HandleFunc("/reload", reload)
 }

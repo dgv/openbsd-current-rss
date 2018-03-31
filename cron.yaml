@@ -1,0 +1,4 @@
+cron:
+- description: "reload entries"
+  url: /reload
+  schedule: every 1 hours
