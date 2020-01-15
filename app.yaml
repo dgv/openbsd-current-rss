@@ -8,4 +8,3 @@ handlers:
   script: auto
 - url: /reload
   script: auto
-  login: admin
