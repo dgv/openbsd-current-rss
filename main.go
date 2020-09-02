@@ -8,11 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/urlfetch"
-
-	"golang.org/x/net/context"
 	"golang.org/x/net/html"
 )
 
@@ -46,11 +41,11 @@ type Link struct {
 	Rel  string `xml:"rel,attr,omitempty"`
 }
 
-func serveError(c context.Context, w http.ResponseWriter, err error) {
+func serveError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	io.WriteString(w, "Internal Server Error")
-	log.Errorf(c, "%v", err)
+	println(err.Error())
 }
 
 // parse entries by h3 tag
@@ -145,13 +140,11 @@ func parseEntries(body io.ReadCloser) (entries []Entry) {
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
 	if len(entries) == 0 {
-		log.Infof(c, "loading entries")
-		client := urlfetch.Client(c)
-		res, err := client.Get(OPENBSD_CURRENT_URL)
+		println("loading entries")
+		res, err := http.Get(OPENBSD_CURRENT_URL)
 		if err != nil {
-			serveError(c, w, err)
+			serveError(w, err)
 			return
 		}
 		defer res.Body.Close()
@@ -163,28 +156,26 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	enc := xml.NewEncoder(w)
 	if err := enc.Encode(v); err != nil {
-		serveError(c, w, err)
+		serveError(w, err)
 	}
 }
 
 func reload(w http.ResponseWriter, r *http.Request) {
-	c := appengine.NewContext(r)
-	log.Infof(c, "reloading entries")
-	client := urlfetch.Client(c)
-	res, err := client.Get(OPENBSD_CURRENT_URL)
+	println("reloading entries")
+	res, err := http.Get(OPENBSD_CURRENT_URL)
 	if err != nil {
-		serveError(c, w, err)
+		serveError(w, err)
 		return
 	}
 	defer res.Body.Close()
 	entries = parseEntries(res.Body)
 }
 
-func init() {
-	http.HandleFunc("/", handle)
-	http.HandleFunc("/reload", reload)
-}
-
 func main() {
-	appengine.Main()
+	http.HandleFunc("/", handle)
+        http.HandleFunc("/reload", reload)
+
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		panic(err)
+	}
 }
