@@ -151,7 +151,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		entries = parseEntries(res.Body)
 	}
 	// encode entries into atom(rss)
-	v := &Atom{Xmlns: "http://www.w3.org/2005/Atom", Title: "OpenBSD Current Updates", Updated: time.Now().Format(time.RFC3339), Id: "http://openbsd-current-rss.appspot.com", Name: "sthen", Email: "sthen@openbsd.org", Link: []Link{{"http://openbsd-current-rss.appspot.com", "self"}, {Href: "http://openbsd-current-rss.appspot.com"}}, Entry: entries}
+	v := &Atom{Xmlns: "http://www.w3.org/2005/Atom", Title: "OpenBSD Current Updates", Updated: time.Now().Format(time.RFC3339), Id: "http://openbsd-current-rss.appspot.com/", Name: "sthen", Email: "sthen@openbsd.org", Link: []Link{{"http://openbsd-current-rss.appspot.com/", "self"}, {Href: "http://openbsd-current-rss.appspot.com/"}}, Entry: entries}
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(http.StatusOK)
 	enc := xml.NewEncoder(w)
