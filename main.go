@@ -28,12 +28,16 @@ type Atom struct {
 }
 
 type Entry struct {
-	Title   string `xml:"title"`
-	Link    Link   `xml:"link"`
-	Updated string `xml:"updated"`
-	Id      string `xml:"id"`
-	Content string `xml:"content"`
-	Type    string `xml:"type,attr"`
+	Title   string  `xml:"title"`
+	Link    Link    `xml:"link"`
+	Updated string  `xml:"updated"`
+	Id      string  `xml:"id"`
+	Content Content `xml:"content"`
+}
+
+type Content struct {
+	Type string `xml:"type,attr"`
+	Text string `xml:",chardata"`
 }
 
 type Link struct {
@@ -87,7 +91,7 @@ func parseEntries(body io.ReadCloser) (entries []Entry) {
 			t := z.Token()
 			// write previous entry or the last one (before hr)
 			if title != "" && ((t.Data == "h3" && tt == html.StartTagToken) || t.Data == "hr") {
-				entries = append(entries, Entry{Title: strings.TrimSpace(title), Updated: date, Id: id, Content: content, Type: "html", Link: Link{Href: id}})
+				entries = append(entries, Entry{Title: strings.TrimSpace(title), Updated: date, Id: id, Content: Content{Type: "html", Text: content}, Link: Link{Href: id}})
 			}
 			if t.Data == "h3" {
 				if tt == html.StartTagToken {
@@ -173,7 +177,7 @@ func reload(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handle)
-        http.HandleFunc("/reload", reload)
+	http.HandleFunc("/reload", reload)
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		panic(err)
