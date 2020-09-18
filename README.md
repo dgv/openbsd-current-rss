@@ -4,6 +4,8 @@ openbsd-current-rss
 
 OpenBSD current RSS is a small usefull service to not miss latest OpenBSD changes, it retrieves (daily) news from [http://www.openbsd.org/faq/current.html](http://www.openbsd.org/faq/current.html) and generates an [atom feed](http://openbsd-current-rss.appspot.com/).
 
+[![Valid Atom 1.0](https://validator.w3.org/feed/images/valid-atom.png)](https://validator.w3.org/feed/check.cgi?url=http%3A//openbsd-current-rss.appspot.com)
+
 ### License
 
 Copyright 2017 Daniel G. Vargas
