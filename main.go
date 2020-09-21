@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grokify/html-strip-tags-go"
 	"golang.org/x/net/html"
 )
 
@@ -36,7 +37,7 @@ type Entry struct {
 }
 
 type Content struct {
-	Type string `xml:"type,attr"`
+	Type string `xml:"type,attr,omitempty"`
 	Text string `xml:",chardata"`
 }
 
@@ -53,7 +54,7 @@ func serveError(w http.ResponseWriter, err error) {
 }
 
 // parse entries by h3 tag
-func parseEntries(body io.ReadCloser) (entries []Entry) {
+func parseEntries(r *http.Request, body io.ReadCloser) (entries []Entry) {
 	z := html.NewTokenizer(body)
 	depth := 0
 	var id, date, title, content string
@@ -91,7 +92,13 @@ func parseEntries(body io.ReadCloser) (entries []Entry) {
 			t := z.Token()
 			// write previous entry or the last one (before hr)
 			if title != "" && ((t.Data == "h3" && tt == html.StartTagToken) || t.Data == "hr") {
-				entries = append(entries, Entry{Title: strings.TrimSpace(title), Updated: date, Id: id, Content: Content{Type: "html", Text: content}, Link: Link{Href: id}})
+				typeContent := ""
+				dataContent := strip.StripTags(content)
+				if t, ok := r.URL.Query()["type"]; ok && t[0] == "html" {
+					typeContent = t[0]
+					dataContent = content
+				}
+				entries = append(entries, Entry{Title: strings.TrimSpace(title), Updated: date, Id: id, Content: Content{Type: typeContent, Text: dataContent}, Link: Link{Href: id}})
 			}
 			if t.Data == "h3" {
 				if tt == html.StartTagToken {
@@ -152,7 +159,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer res.Body.Close()
-		entries = parseEntries(res.Body)
+		entries = parseEntries(r, res.Body)
 	}
 	// encode entries into atom(rss)
 	v := &Atom{Xmlns: "http://www.w3.org/2005/Atom", Title: "OpenBSD Current Updates", Updated: time.Now().Format(time.RFC3339), Id: "http://openbsd-current-rss.appspot.com/", Name: "sthen", Email: "sthen@openbsd.org", Link: []Link{{"http://openbsd-current-rss.appspot.com/", "self"}, {Href: "http://openbsd-current-rss.appspot.com/"}}, Entry: entries}
@@ -172,7 +179,7 @@ func reload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer res.Body.Close()
-	entries = parseEntries(res.Body)
+	entries = parseEntries(r, res.Body)
 }
 
 func main() {
