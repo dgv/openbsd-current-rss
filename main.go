@@ -14,7 +14,10 @@ import (
 
 const OPENBSD_CURRENT_URL = "http://www.openbsd.org/faq/current.html"
 
-var entries = make([]Entry, 0)
+var (
+	entries = make([]Entry, 0)
+	entriesHTML = make([]Entry,0)
+)
 
 type Atom struct {
 	XMLName xml.Name `xml:"feed"`
@@ -54,7 +57,7 @@ func serveError(w http.ResponseWriter, err error) {
 }
 
 // parse entries by h3 tag
-func parseEntries(r *http.Request, body io.ReadCloser) (entries []Entry) {
+func parseEntries(body io.ReadCloser) (entries, entriesHTML []Entry) {
 	z := html.NewTokenizer(body)
 	depth := 0
 	var id, date, title, content string
@@ -92,13 +95,8 @@ func parseEntries(r *http.Request, body io.ReadCloser) (entries []Entry) {
 			t := z.Token()
 			// write previous entry or the last one (before hr)
 			if title != "" && ((t.Data == "h3" && tt == html.StartTagToken) || t.Data == "hr") {
-				typeContent := ""
-				dataContent := strip.StripTags(content)
-				if t, ok := r.URL.Query()["type"]; ok && t[0] == "html" {
-					typeContent = t[0]
-					dataContent = content
-				}
-				entries = append(entries, Entry{Title: strings.TrimSpace(title), Updated: date, Id: id, Content: Content{Type: typeContent, Text: dataContent}, Link: Link{Href: id}})
+				entriesHTML = append(entriesHTML, Entry{Title: strings.TrimSpace(title), Updated: date, Id: id, Content: Content{Type: "html", Text: content}, Link: Link{Href: id}})
+				entries = append(entries, Entry{Title: strings.TrimSpace(title), Updated: date, Id: id, Content: Content{Text: strip.StripTags(content)}, Link: Link{Href: id}})
 			}
 			if t.Data == "h3" {
 				if tt == html.StartTagToken {
@@ -159,10 +157,14 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer res.Body.Close()
-		entries = parseEntries(r, res.Body)
+		entries, entriesHTML = parseEntries(res.Body)
+	}
+	e:= entries
+	if t, ok := r.URL.Query()["type"]; ok && t[0] == "html" {
+		e= entriesHTML
 	}
 	// encode entries into atom(rss)
-	v := &Atom{Xmlns: "http://www.w3.org/2005/Atom", Title: "OpenBSD Current Updates", Updated: time.Now().Format(time.RFC3339), Id: "http://openbsd-current-rss.appspot.com/", Name: "sthen", Email: "sthen@openbsd.org", Link: []Link{{"http://openbsd-current-rss.appspot.com/", "self"}, {Href: "http://openbsd-current-rss.appspot.com/"}}, Entry: entries}
+	v := &Atom{Xmlns: "http://www.w3.org/2005/Atom", Title: "OpenBSD Current Updates", Updated: time.Now().Format(time.RFC3339), Id: "http://openbsd-current-rss.appspot.com/", Name: "sthen", Email: "sthen@openbsd.org", Link: []Link{{"http://openbsd-current-rss.appspot.com/", "self"}, {Href: "http://openbsd-current-rss.appspot.com/"}}, Entry: e}
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(http.StatusOK)
 	enc := xml.NewEncoder(w)
@@ -179,7 +181,7 @@ func reload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer res.Body.Close()
-	entries = parseEntries(r, res.Body)
+	entries, entriesHTML = parseEntries(res.Body)
 }
 
 func main() {
