@@ -2,7 +2,7 @@ openbsd-current-rss
 ===================
 [![Build Status](https://travis-ci.org/dgv/openbsd-current-rss.svg?branch=master)](https://travis-ci.org/dgv/openbsd-current-rss)
 
-OpenBSD current RSS is a small usefull service to not miss latest OpenBSD changes, it retrieves (daily) news from [http://www.openbsd.org/faq/current.html](http://www.openbsd.org/faq/current.html) and generates an [atom feed](http://openbsd-current-rss.appspot.com/).
+OpenBSD current RSS is a small usefull service to not miss latest OpenBSD changes, it retrieves (daily) news from [http://www.openbsd.org/faq/current.html](http://www.openbsd.org/faq/current.html) and generates an [atom feed](http://openbsd-current-rss.appspot.com/) or with HTML content support [atom feed (html content)](http://openbsd-current-rss.appspot.com/?type=html).
 
 [![Valid Atom 1.0](https://validator.w3.org/feed/images/valid-atom.png)](https://validator.w3.org/feed/check.cgi?url=http%3A//openbsd-current-rss.appspot.com)
 
